@@ -10,7 +10,7 @@ import './App.css'
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <NovelProvider>
         <div className="min-h-screen bg-background text-foreground">
           <Routes>
