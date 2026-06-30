@@ -4,12 +4,29 @@ import { useNovel } from '@/contexts/NovelContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   ArrowLeft,
   Trash2,
-  Users
+  Users,
+  Wand2,
+  Loader2
 } from 'lucide-react'
 import type { Character } from '@/types'
+import { generateChapterSimple } from '@/lib/aiClient'
+import { getAIConfig } from '@/lib/aiConfig'
+import { buildCharacterSuggestionSystemPrompt, buildCharacterSuggestionUserPrompt } from '@/lib/promptBuilder'
+
+interface CharacterSuggestion {
+  name: string
+  gender: string
+  age: string
+  appearance: string
+  personality: string
+  background: string
+  role: Character['role']
+  traits: string[]
+}
 
 const ROLE_OPTIONS = [
   { value: 'protagonist', label: '主角' },
@@ -36,6 +53,9 @@ export default function CharacterPage() {
     background: '', role: 'protagonist' as Character['role'],
     traits: [] as string[], status: 'alive' as Character['status'], notes: ''
   })
+  const [aiInput, setAiInput] = useState('')
+  const [aiSuggestions, setAiSuggestions] = useState<CharacterSuggestion[]>([])
+  const [aiLoading, setAiLoading] = useState(false)
 
   useEffect(() => {
     if (id) loadCharacters(id)
@@ -45,6 +65,51 @@ export default function CharacterPage() {
     setForm({ name: '', gender: '', age: '', appearance: '', personality: '',
       background: '', role: 'protagonist', traits: [], status: 'alive', notes: '' })
     setEditingId(null)
+  }
+
+  const handleAIGenerate = async () => {
+    const config = getAIConfig()
+    if (!config.apiKey || !id) return
+    setAiLoading(true)
+    setAiSuggestions([])
+    try {
+      const systemPrompt = buildCharacterSuggestionSystemPrompt({
+        title: currentNovel?.title || '',
+        genre: currentNovel?.genre || '',
+        description: currentNovel?.description || ''
+      })
+      const userPrompt = buildCharacterSuggestionUserPrompt(aiInput)
+      const result = await generateChapterSimple(config, [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ])
+      const jsonMatch = result.match(/\[[\s\S]*\]/)
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]) as CharacterSuggestion[]
+        setAiSuggestions(parsed.slice(0, 3))
+      }
+    } catch (err) {
+      console.error('AI 角色生成失败', err)
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
+  const applyCharacterSuggestion = (s: CharacterSuggestion) => {
+    setForm({
+      name: s.name,
+      gender: s.gender,
+      age: s.age,
+      appearance: s.appearance,
+      personality: s.personality,
+      background: s.background,
+      role: s.role,
+      traits: s.traits || [],
+      status: 'alive',
+      notes: ''
+    })
+    setAiSuggestions([])
+    setAiInput('')
   }
 
   const handleCreate = async () => {
@@ -160,6 +225,64 @@ export default function CharacterPage() {
           {/* Edit/Create Form */}
           <div className="border rounded-lg p-4 bg-card">
             <h3 className="font-semibold mb-4">{editingId ? '编辑角色' : '添加角色'}</h3>
+
+            {/* AI Character Suggestion */}
+            <div className="mb-4 p-3 bg-muted/30 rounded-lg">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="输入角色描述，如：冷酷的男主角"
+                  value={aiInput}
+                  onChange={e => setAiInput(e.target.value)}
+                  className="text-sm flex-1"
+                />
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleAIGenerate}
+                  disabled={aiLoading || !aiInput.trim()}
+                >
+                  {aiLoading ? (
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  ) : (
+                    <Wand2 className="h-3 w-3 mr-1" />
+                  )}
+                  AI 生成角色
+                </Button>
+              </div>
+
+              {aiSuggestions.length > 0 && (
+                <div className="space-y-2 mt-3">
+                  {aiSuggestions.map((s, i) => (
+                    <Card
+                      key={i}
+                      className="cursor-pointer hover:border-primary/60 transition-colors"
+                      onClick={() => applyCharacterSuggestion(s)}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-semibold text-sm">{s.name}</span>
+                          <span className="text-xs text-muted-foreground">{s.gender} · {s.age}岁</span>
+                          <span className="text-xs px-1.5 py-0.5 bg-muted rounded">
+                            {s.role === 'protagonist' ? '主角' : s.role === 'antagonist' ? '反派' : s.role === 'supporter' ? '配角' : '其他'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{s.personality}</p>
+                        {s.traits.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {s.traits.map(t => (
+                              <span key={t} className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+                                {t}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="space-y-3">
               <Input
                 placeholder="角色名 *"

@@ -1,71 +1,13 @@
-/* TipTap Editor Styles */
-.ProseMirror {
-  min-height: 400px;
-  padding: 1rem;
-  outline: none;
+/* App level styles - minimal, most styles are in Tailwind/Components */
+
+/* Page transition */
+.page-enter {
+  opacity: 0;
+  transform: translateY(8px);
 }
 
-.ProseMirror p {
-  margin-bottom: 0.75rem;
-  line-height: 1.8;
-}
-
-.ProseMirror h1 {
-  font-size: 1.75rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-  margin-top: 1.5rem;
-}
-
-.ProseMirror h2 {
-  font-size: 1.4rem;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
-  margin-top: 1.25rem;
-}
-
-.ProseMirror h3 {
-  font-size: 1.15rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  margin-top: 1rem;
-}
-
-.ProseMirror p.is-editor-empty:first-child::before {
-  content: attr(data-placeholder);
-  float: left;
-  color: #6b7280;
-  pointer-events: none;
-  height: 0;
-}
-
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #374151;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #4b5563;
-}
-
-/* AI Streaming cursor animation */
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-
-.ai-cursor::after {
-  content: '|';
-  animation: blink 0.8s step-end infinite;
-  color: #3b82f6;
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 200ms ease, transform 200ms ease;
 }

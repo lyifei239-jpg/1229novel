@@ -64,3 +64,80 @@ export function buildUserPrompt(context: ChapterContext): string {
 
   return parts.length > 0 ? `${parts.join('\n\n')}\n\n${lastLine}` : lastLine
 }
+
+// ===== AI 小说建议 =====
+
+export function buildNovelSuggestionSystemPrompt(): string {
+  return `你是一位专业的小说创作策划助手。根据用户的简要描述，生成 3 个小说创意方案。
+每个方案必须包含：标题、题材、简介。
+请以 JSON 数组格式返回，格式如下：
+[
+  {
+    "title": "小说标题",
+    "genre": "题材分类",
+    "description": "小说简介（50-100字）"
+  }
+]
+只返回 JSON 数组，不要包含其他内容。`
+}
+
+export function buildNovelSuggestionUserPrompt(userInput: string): string {
+  return `用户想要写的小说方向：${userInput}
+请生成 3 个具体的小说创意方案。`
+}
+
+// ===== AI 角色建议 =====
+
+export function buildCharacterSuggestionSystemPrompt(novel: { title: string; genre: string; description: string }): string {
+  return `你是一位专业的小说角色创作助手。根据已有小说设定和用户描述，生成 3 个角色方案。
+每个方案必须包含：姓名、性别、年龄、外貌描述、性格特征、背景故事、角色定位、性格特质。
+
+小说信息：
+- 标题：${novel.title}
+- 题材：${novel.genre}
+- 简介：${novel.description}
+
+请以 JSON 数组格式返回，格式如下：
+[
+  {
+    "name": "角色名",
+    "gender": "性别",
+    "age": "年龄",
+    "appearance": "外貌描述",
+    "personality": "性格特征",
+    "background": "背景故事",
+    "role": "protagonist|supporter|antagonist|other",
+    "traits": ["特质1", "特质2", "特质3"]
+  }
+]
+只返回 JSON 数组，不要包含其他内容。`
+}
+
+export function buildCharacterSuggestionUserPrompt(userInput: string): string {
+  return `用户想要的角色描述：${userInput}
+请生成 3 个符合要求的角色方案。`
+}
+
+// ===== AI 大纲建议 =====
+
+export function buildOutlineSuggestionSystemPrompt(novel: { title: string; genre: string; description: string }): string {
+  return `你是一位专业的小说大纲创作助手。根据已有小说设定和用户要求，生成一条大纲内容。
+
+小说信息：
+- 标题：${novel.title}
+- 题材：${novel.genre}
+- 简介：${novel.description}
+
+请以 JSON 格式返回，格式如下：
+{
+  "title": "大纲标题",
+  "content": "大纲详细内容（200-500字）",
+  "keyPoints": ["剧情点1", "剧情点2", "剧情点3", "剧情点4", "剧情点5"]
+}
+只返回 JSON，不要包含其他内容。`
+}
+
+export function buildOutlineSuggestionUserPrompt(userInput: string): string {
+  return `用户要求的大纲方向：${userInput}
+请根据这个方向生成详细的大纲内容。`
+}

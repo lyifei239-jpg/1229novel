@@ -97,6 +97,10 @@ export default function NovelEditorPage() {
     setChapterContent(prev => prev + '\n\n' + text)
   }, [])
 
+  const handleAIReplace = useCallback((text: string) => {
+    setChapterContent(text)
+  }, [])
+
   if (!currentNovel) {
     return (
       <div className="min-h-screen flex items-center justify-center text-muted-foreground">
@@ -230,6 +234,7 @@ export default function NovelEditorPage() {
               chapterContent={chapterContent}
               chapterTitle={chapterTitle}
               onInsert={handleAIInsert}
+              onReplace={handleAIReplace}
             />
           </aside>
         )}

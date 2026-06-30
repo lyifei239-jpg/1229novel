@@ -4,13 +4,25 @@ import { useNovel } from '@/contexts/NovelContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   ArrowLeft,
   Plus,
   Trash2,
-  FileText
+  FileText,
+  Wand2,
+  Loader2
 } from 'lucide-react'
 import type { Outline } from '@/types'
+import { generateChapterSimple } from '@/lib/aiClient'
+import { getAIConfig } from '@/lib/aiConfig'
+import { buildOutlineSuggestionSystemPrompt, buildOutlineSuggestionUserPrompt } from '@/lib/promptBuilder'
+
+interface OutlineSuggestion {
+  title: string
+  content: string
+  keyPoints: string[]
+}
 
 export default function OutlinePage() {
   const { id } = useParams<{ id: string }>()
@@ -20,6 +32,9 @@ export default function OutlinePage() {
   const [editTitle, setEditTitle] = useState('')
   const [editContent, setEditContent] = useState('')
   const [editKeyPoints, setEditKeyPoints] = useState('')
+  const [aiInput, setAiInput] = useState('')
+  const [aiSuggestion, setAiSuggestion] = useState<OutlineSuggestion | null>(null)
+  const [aiLoading, setAiLoading] = useState(false)
 
   useEffect(() => {
     if (id) loadOutlines(id)
@@ -35,6 +50,48 @@ export default function OutlinePage() {
       key_points: [],
       order
     })
+  }
+
+  const handleAIGenerate = async () => {
+    const config = getAIConfig()
+    if (!config.apiKey || !id) return
+    setAiLoading(true)
+    setAiSuggestion(null)
+    try {
+      const systemPrompt = buildOutlineSuggestionSystemPrompt({
+        title: currentNovel?.title || '',
+        genre: currentNovel?.genre || '',
+        description: currentNovel?.description || ''
+      })
+      const userPrompt = buildOutlineSuggestionUserPrompt(aiInput)
+      const result = await generateChapterSimple(config, [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ])
+      const jsonMatch = result.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]) as OutlineSuggestion
+        setAiSuggestion(parsed)
+      }
+    } catch (err) {
+      console.error('AI 大纲生成失败', err)
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
+  const applyOutlineSuggestion = async () => {
+    if (!id || !aiSuggestion) return
+    const order = outlines.length + 1
+    await createOutline({
+      novel_id: id,
+      title: aiSuggestion.title,
+      content: aiSuggestion.content,
+      key_points: aiSuggestion.keyPoints,
+      order
+    })
+    setAiSuggestion(null)
+    setAiInput('')
   }
 
   const startEdit = (outline: Outline) => {
@@ -78,6 +135,60 @@ export default function OutlinePage() {
             新建大纲
           </Button>
         </div>
+
+        {/* AI Outline Suggestion */}
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <Wand2 className="h-4 w-4 text-primary" />
+              AI 生成大纲
+            </h3>
+            <div className="flex gap-2 mb-3">
+              <Input
+                placeholder="输入大纲方向，如：主角初入宗门"
+                value={aiInput}
+                onChange={e => setAiInput(e.target.value)}
+                className="flex-1"
+              />
+              <Button
+                variant="secondary"
+                onClick={handleAIGenerate}
+                disabled={aiLoading || !aiInput.trim()}
+              >
+                {aiLoading ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Wand2 className="h-4 w-4 mr-1" />
+                )}
+                AI 生成大纲
+              </Button>
+            </div>
+
+            {aiSuggestion && (
+              <div className="border rounded-lg p-4 bg-muted/30">
+                <h4 className="font-semibold text-sm mb-2">{aiSuggestion.title}</h4>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap mb-3">{aiSuggestion.content}</p>
+                {aiSuggestion.keyPoints.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {aiSuggestion.keyPoints.map((kp, i) => (
+                      <span key={i} className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded">
+                        {kp}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={applyOutlineSuggestion}>
+                    使用此大纲
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setAiSuggestion(null)}>
+                    取消
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <div className="space-y-4">
           {outlines.length === 0 ? (
