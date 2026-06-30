@@ -1,0 +1,16 @@
+<!DOCTYPE html><html lang="zh-CN">
+<head><meta charset="utf-8"><title>CDN Status</title>
+<style>body{font-family:system-ui,sans-serif;max-width:600px;margin:40px auto;padding:0 20px;background:#0f172a;color:#e2e8f0}.card{background:#1e293b;border-radius:8px;padding:16px;margin:12px 0}.live{color:#22c55e;font-weight:600}.stale{color:#f59e0b}.hash{font-family:monospace;color:#94a3b8}#log{font-family:monospace;font-size:0.8rem;color:#64748b;margin-top:8px;max-height:200px;overflow-y:auto}</style></head>
+<body><h1>?? CDN Status</h1>
+<div class="card"><p>Latest: v19 <span class="hash" id="target">index-DRy7exVG.js</span></p><p>Current: <span class="hash" id="current">...</span></p><p>Status: <span id="status">?</span></p></div>
+<div class="card"><div id="log"></div></div>
+<script>
+const T='index-DRy7exVG.js',U='https://lyifei239-jpg.github.io/1229novel/';
+setInterval(()=>{fetch(U+'_='+Date.now()).then(r=>r.text()).then(h=>{
+const m=h.match(/src="[^"]*index-([^."]+)\.js/);const c=m?'index-'+m[1]+'.js':'?';
+document.getElementById('current').textContent=c;
+const s=document.getElementById('status');
+s.textContent=c===T?'? LIVE':'? CACHE';s.className=c===T?'live':'stale';
+document.getElementById('log').innerHTML='['+new Date().toLocaleTimeString()+'] '+c+'\n'+document.getElementById('log').innerHTML
+})},5000)
+</script></body></html>
