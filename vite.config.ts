@@ -4,7 +4,7 @@ import { defineConfig } from "vite"
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/1229novel/',
+  base: process.env.VITE_BASE_PATH || '/',
   plugins: [react()],
   resolve: {
     alias: {
